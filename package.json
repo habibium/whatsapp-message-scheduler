@@ -1,0 +1,19 @@
+{
+  "name": "whatsapp-message-scheduler",
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "version": "0.0.1",
+  "keywords": [],
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "node --watch src/index.ts",
+    "start": "node src/index.ts"
+  },
+  "packageManager": "pnpm@10.26.1",
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "typescript": "^5.9.3"
+  }
+}
