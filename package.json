@@ -9,6 +9,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "node --watch src/index.ts",
+    "build": "tsc",
     "start": "node src/index.ts",
     "biome": "biome check --write"
   },
@@ -24,6 +25,9 @@
     "@types/node": "^25.0.3",
     "@types/qrcode-terminal": "^0.12.2",
     "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=24"
   },
   "packageManager": "pnpm@10.26.1"
 }
