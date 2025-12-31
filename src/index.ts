@@ -37,7 +37,7 @@ async function connectToWhatsApp() {
   sock = makeWASocket({
     version,
     auth: state,
-    logger: pino()
+    logger: pino({ transport: { target: "pino-pretty" } })
   });
 
   sock.ev.on("creds.update", saveCreds);
