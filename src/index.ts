@@ -1,8 +1,9 @@
+import type { Boom } from "@hapi/boom";
+import { DisconnectReason, fetchLatestBaileysVersion, makeWASocket, type WASocket } from "baileys";
 import cron, { type ScheduledTask } from "node-cron";
-import qrcode from "qrcode-terminal";
-import pkg from "whatsapp-web.js";
-
-const { Client, LocalAuth } = pkg;
+import pino from "pino";
+import qrcode from "qrcode";
+import { useSingleFileAuthState } from "./auth.js";
 
 type ScheduledMessageConfig = {
   target: string;
@@ -17,91 +18,78 @@ const SCHEDULED_MESSAGES: ScheduledMessageConfig[] = [
   {
     target: "Test",
     isGroup: true,
-    message: "🕌 Zuhr Reminder\n\nIt's time for Zuhr prayer. May Allah accept your prayers. 🤲",
-    schedule: "10 13 * * 0-4,6" // 1:10 PM, Saturday-Thursday
-  },
-  {
-    target: "Test",
-    isGroup: true,
-    message: "🕌 Asr Reminder\n\nIt's time for Asr prayer. May Allah accept your prayers. 🤲",
-    schedule: "55 15 * * 0-4,6" // 3:55 PM, Saturday-Thursday
-  },
-  {
-    target: "Test",
-    isGroup: true,
-    message:
-      "🕌 Maghrib Reminder\n\nIt's time for Maghrib prayer. May Allah accept your prayers. 🤲",
-    schedule: "20 17 * * 0-4,6" // 5:20 PM, Saturday-Thursday
+    message: `IT'S TIME FOR MAGRIB!
+Get up and prepare.
+
+*[Salah Bot]*`,
+    schedule: "* * * * *"
   }
 ];
 
 // ============= BOT IMPLEMENTATION =============
-const client = new Client({
-  authStrategy: new LocalAuth({
-    dataPath: "./.wwebjs_auth" // Stores session data locally
-  }),
-  puppeteer: {
-    headless: true, // Set to false to see the browser
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-accelerated-2d-canvas",
-      "--no-first-run",
-      "--no-zygote",
-      "--disable-gpu"
-    ]
-  }
-});
-
-// Store scheduled tasks to manage them
+let sock: WASocket;
 const scheduledTasks: ScheduledTask[] = [];
 
-// Display QR code for authentication
-client.on("qr", (qr) => {
-  console.log("\n📱 Scan this QR code with WhatsApp to login:\n");
-  qrcode.generate(qr, { small: true });
-  console.log("\nWaiting for authentication...\n");
-});
+async function connectToWhatsApp() {
+  const { state, saveCreds } = await useSingleFileAuthState("auth_state.json");
+  const { version } = await fetchLatestBaileysVersion();
 
-// Handle authentication
-client.on("authenticated", () => {
-  console.log("✅ Authentication successful!");
-});
+  sock = makeWASocket({
+    version,
+    auth: state,
+    logger: pino()
+  });
 
-// Handle authentication failure
-client.on("auth_failure", (msg) => {
-  console.error("❌ Authentication failed:", msg);
-  process.exit(1);
-});
+  sock.ev.on("creds.update", saveCreds);
 
-// When client is ready
-client.on("ready", async () => {
-  console.log("🚀 WhatsApp bot is ready!");
+  sock.ev.on("connection.update", async (update) => {
+    const { connection, lastDisconnect, qr } = update;
+    if (qr) {
+      // as an example, this prints the qr code to the terminal
+      console.log(await qrcode.toString(qr, { type: "terminal", small: true }));
+    }
+    if (connection === "close") {
+      const shouldReconnect =
+        (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+      console.log(
+        "connection closed due to ",
+        lastDisconnect?.error,
+        ", reconnecting ",
+        shouldReconnect
+      );
+      if (shouldReconnect) {
+        connectToWhatsApp();
+      }
+    } else if (connection === "open") {
+      console.log("🚀 WhatsApp bot is ready!");
+      onReady();
+    }
+  });
+}
+
+async function onReady() {
   console.log(`📅 Current time: ${new Date().toLocaleString()}`);
   console.log("\n--- Scheduled Messages ---");
-  console.log("\n-------------------------\n");
 
   // Set up all scheduled messages
   for (const config of SCHEDULED_MESSAGES) {
-    await setupScheduledMessage(config);
+    setupScheduledMessage(config);
   }
 
   console.log("\n✨ All schedules are active. Keep this process running.\n");
   console.log("Press Ctrl+C to stop the bot.\n");
-});
+}
 
 // Find chat by phone number or group name
 async function findChat(target: string, isGroup: boolean): Promise<string | null> {
   try {
     if (isGroup) {
       // Search for group by name
-      const chats = await client.getChats();
-      const group = chats.find(
-        (chat) => chat.isGroup && chat.name.toLowerCase() === target.toLowerCase()
-      );
-      if (group) {
-        return group.id._serialized;
+      const groups = await sock.groupFetchAllParticipating();
+      for (const id in groups) {
+        if (groups[id].subject.toLowerCase() === target.toLowerCase()) {
+          return id;
+        }
       }
       console.error(`❌ Group not found: ${target}`);
       return null;
@@ -109,8 +97,8 @@ async function findChat(target: string, isGroup: boolean): Promise<string | null
     // For contacts, format as WhatsApp ID
     // Remove any +, spaces, or dashes from phone number
     const cleanNumber = target.replace(/[\s\-+]/g, "");
-    const chatId = `${cleanNumber}@c.us`;
-    return chatId;
+    // Baileys uses @s.whatsapp.net for individual contacts
+    return `${cleanNumber}@s.whatsapp.net`;
   } catch (error) {
     console.error(`❌ Error finding chat for ${target}:`, error);
     return null;
@@ -120,7 +108,7 @@ async function findChat(target: string, isGroup: boolean): Promise<string | null
 // Send message to a chat
 async function sendMessage(chatId: string, message: string): Promise<boolean> {
   try {
-    await client.sendMessage(chatId, message);
+    await sock.sendMessage(chatId, { text: message });
     console.log(`✅ [${new Date().toLocaleString()}] Message sent successfully!`);
     return true;
   } catch (error) {
@@ -130,12 +118,7 @@ async function sendMessage(chatId: string, message: string): Promise<boolean> {
 }
 
 // Set up a scheduled message
-async function setupScheduledMessage(config: {
-  target: string;
-  isGroup: boolean;
-  message: string;
-  schedule: string;
-}) {
+function setupScheduledMessage(config: ScheduledMessageConfig) {
   const { target, isGroup, message, schedule } = config;
 
   // Validate cron expression
@@ -167,16 +150,6 @@ async function setupScheduledMessage(config: {
   scheduledTasks.push(task);
 }
 
-// Handle disconnection
-client.on("disconnected", (reason) => {
-  console.log("❌ Client disconnected:", reason);
-  // Stop all scheduled tasks
-  for (const task of scheduledTasks) {
-    task.stop();
-  }
-  process.exit(1);
-});
-
 // Graceful shutdown
 process.on("SIGINT", async () => {
   console.log("\n\n🛑 Shutting down gracefully...");
@@ -184,12 +157,9 @@ process.on("SIGINT", async () => {
   for (const task of scheduledTasks) {
     task.stop();
   }
-  await client.destroy();
-  console.log("👋 Goodbye!");
   process.exit(0);
 });
 
 // Start the client
 console.log("🔄 Starting WhatsApp bot...");
-console.log("This may take a moment on first run...\n");
-client.initialize();
+connectToWhatsApp();

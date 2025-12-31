@@ -1,6 +1,6 @@
 node_modules
 dist/
 
-# WhatsApp session data (contains auth tokens - DO NOT COMMIT)
-.wwebjs_auth/
-.wwebjs_cache/
+# WhatsApp session data
+auth_info_baileys
+auth_state.json
