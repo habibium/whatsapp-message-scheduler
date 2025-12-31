@@ -13,6 +13,8 @@
     "biome": "biome check --write"
   },
   "dependencies": {
+    "@hono/node-server": "^1.19.7",
+    "hono": "^4.11.3",
     "node-cron": "^4.2.1",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.34.2"
