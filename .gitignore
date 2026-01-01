@@ -1,6 +1,4 @@
 node_modules
 dist/
 
-# WhatsApp session data
-auth_info_baileys
-auth_state.json
+.env
