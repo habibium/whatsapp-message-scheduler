@@ -1,10 +1,18 @@
 .auth-page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, var(--color-bg-primary) 0%, #0f1419 100%);
+  padding-bottom: 60px; /* Space for fixed footer */
+}
+
+.auth-content {
+  flex: 1;
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
-  background: linear-gradient(135deg, var(--color-bg-primary) 0%, #0f1419 100%);
+  width: 100%;
 }
 
 .auth-container {

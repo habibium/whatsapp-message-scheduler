@@ -132,8 +132,21 @@
 .main-content {
   flex: 1;
   margin-left: 260px;
-  padding: var(--space-8);
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-content {
+  flex: 1;
+  padding: var(--space-8);
+  padding-bottom: calc(var(--space-8) + 60px);
+}
+
+/* Footer adjustment for layout with sidebar */
+.layout .app-footer {
+  left: 260px;
+  width: calc(100% - 260px);
 }
 
 /* Loading Screen */

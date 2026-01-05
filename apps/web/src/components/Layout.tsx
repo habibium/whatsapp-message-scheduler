@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useWhatsApp } from "../hooks/useWhatsApp";
+import { Footer } from "./Footer";
 import "./Layout.css";
 
 export function Layout() {
@@ -56,7 +57,10 @@ export function Layout() {
       </aside>
 
       <main className="main-content">
-        <Outlet />
+        <div className="page-content">
+          <Outlet />
+        </div>
+        <Footer />
       </main>
     </div>
   );
