@@ -1,3 +1,6 @@
 onlyBuiltDependencies:
+  - baileys
   - esbuild
+  - protobufjs
   - puppeteer
+  - sharp
