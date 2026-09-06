@@ -9,47 +9,28 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/api/hello": {
-      "get": {
-        "summary": "Hello world",
-        "operationId": "hello",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
+    "/api/auth/signup": {
+      "post": {
+        "summary": "Sign up",
+        "description": "Sign up a user with email & password",
+        "operationId": "signup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
               }
             }
-          }
-        }
-      }
-    },
-    "/api/pets/{id}": {
-      "get": {
-        "summary": "Get pet by {id}",
-        "operationId": "get_pet_by_id",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 0
-            }
-          }
-        ],
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Pet"
+                  "$ref": "#/components/schemas/SignupResponse"
                 }
               }
             }
@@ -60,27 +41,55 @@
   },
   "components": {
     "schemas": {
-      "Pet": {
+      "SignupRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8
+          }
+        }
+      },
+      "SignupResponse": {
         "type": "object",
         "required": [
           "id",
-          "name"
+          "email",
+          "created_at",
+          "updated_at"
         ],
         "properties": {
-          "age": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32"
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "email": {
+            "type": "string"
           },
           "id": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
+            "type": "string",
+            "format": "uuid"
           },
-          "name": {
-            "type": "string"
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verified_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           }
         }
       }

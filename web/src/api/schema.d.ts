@@ -4,34 +4,20 @@
  */
 
 export interface paths {
-    "/api/hello": {
+    "/api/auth/signup": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Hello world */
-        get: operations["hello"];
+        get?: never;
         put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/pets/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get pet by {id} */
-        get: operations["get_pet_by_id"];
-        put?: never;
-        post?: never;
+        /**
+         * Sign up
+         * @description Sign up a user with email & password
+         */
+        post: operations["signup"];
         delete?: never;
         options?: never;
         head?: never;
@@ -42,12 +28,24 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        Pet: {
-            /** Format: int32 */
-            age?: number | null;
-            /** Format: int64 */
-            id: number;
-            name: string;
+        SignupRequest: {
+            /**
+             * Format: email
+             * @example user@example.com
+             */
+            email: string;
+            password: string;
+        };
+        SignupResponse: {
+            /** Format: date-time */
+            created_at: string;
+            email: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            verified_at?: string | null;
         };
     };
     responses: never;
@@ -58,42 +56,25 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    hello: {
+    signup: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignupRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/plain": string;
-                };
-            };
-        };
-    };
-    get_pet_by_id: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Pet"];
+                    "application/json": components["schemas"]["SignupResponse"];
                 };
             };
         };
